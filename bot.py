@@ -348,12 +348,18 @@ def main():
         logger.error("You must use one login method!")
         loop.set_exception_handler(lambda *args, **kwargs: None)
         sys.exit(1)
+
+    # Create the future
+    loop.create_task(client.start(*login))
+
     try:
-        loop.run_until_complete(client.start(*login))
+        loop.run_forever()
     except KeyboardInterrupt:
         loop.run_until_complete(client.logout())
         loop.set_exception_handler(lambda *args, **kwargs: None)
     except Exception:
+        import traceback
+        traceback.print_exc()
         logger.error("Crashed. Don't know how, don't care. Exiting.")
         sys.exit(1)
     finally:
