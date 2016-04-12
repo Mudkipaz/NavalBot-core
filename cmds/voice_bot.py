@@ -177,6 +177,9 @@ async def get_queued_vids(client: discord.Client, message: discord.Message):
         i = queue[item]
         title = i[1].get('title')
         s += "\n{}. `{}`".format(item + 1, title)
+
+    if len(queue) > 10:
+        s += "\n(Omitted {} queued items.)".format(len(queue) - 10)
     await client.send_message(message.channel, s)
 
 
