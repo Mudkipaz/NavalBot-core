@@ -8,6 +8,8 @@ A bot for discord servers using [discord.py] (https://github.com/Rapptz/discord.
 [Join our test server!](https://discord.gg/0tfUHkzxPbHCAel9)  
 [Discord Server Requirements] (https://github.com/SunDwarf/NavalBot/blob/develop/requirements.txt)
 
+**If you are running a local version, anything before version 2.5.3 is not supported. Don't even ask.**
+
 ## Why use NavalBot?
 
 NavalBot is the best multi purpose bot available.  
