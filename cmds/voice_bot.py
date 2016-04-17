@@ -299,8 +299,8 @@ async def play_youtube(client: discord.Client, message: discord.Message, args: l
     # Get the voice client.
     if message.server.id not in client.voice:
         try:
-            voice_client = await asyncio.wait_for(client.join_voice_channel(channel=voice_channel), 5)
-        except asyncio.TimeoutError:
+            voice_client = await client.join_voice_channel(channel=voice_channel)
+        except discord.ClientException:
             await client.send_message(message.channel, ":x: Timed out trying to connect to server. Try ?reset")
             return
     else:
@@ -309,11 +309,8 @@ async def play_youtube(client: discord.Client, message: discord.Message, args: l
         if not voice_client.is_connected():
             # Re-create the voice client.
             try:
-                voice_client = await asyncio.wait_for(client.join_voice_channel(channel=voice_channel), 5)
+                voice_client = await client.join_voice_channel(channel=voice_channel)
                 client.voice[message.server.id] = voice_client
-            except asyncio.TimeoutError:
-                await client.send_message(message.channel, ":x: Timed out trying to connect to server. Try ?reset")
-                return
             except discord.ClientException:
                 await client.send_message(message.channel, ":x: Error happened on connecting to voice.")
 
