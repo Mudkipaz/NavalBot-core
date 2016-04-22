@@ -26,13 +26,12 @@ import datetime
 import functools
 import os
 import random
-from math import floor
 
 import discord
+import psutil
 import pyowm
 from google import search
 from googleapiclient.discovery import build
-import psutil
 
 import cmds
 import util
@@ -88,6 +87,7 @@ def _get_weather(api_key, userinput):
     temp = w.get_temperature('celsius')['temp']
     return wind, humidity, temp
 
+
 @cmds.command("weather")
 @util.enforce_args(1, ":x: You must specify a village/town/city/settlement to query!")
 async def weather(client: discord.Client, message: discord.Message, args: list):
@@ -116,9 +116,10 @@ async def commands(client: discord.Client, message: discord.Message):
     """
     Lists the commands for the bot.
     """
-    com = ['help', 'lock', 'info', 'version', 'weather', 'whois', 'uptime', 'google', 'playyt', 'stop', 'skip', 'queue',
-           '\n**Admins only:**\n', 'kick', 'ban', 'unban', 'mute', 'unmute', 'delete', 'getcfg', 'avatar',
-           'setcfg', 'changename', 'blacklist']
+    com = ['help', 'lock', 'info', 'version', 'weather', 'whois', 'uptime', 'remindme', 'coin', 'google', 'searchyt',
+           'playyt', 'stop', 'skip', 'reset', 'queue', 'shuffle', 'np',
+           '\n**Admins only:**\n', 'kick', 'ban', 'unban', 'banned', 'mute', 'unmute', 'delete', 'getcfg', 'avatar',
+           'setcfg', 'changename', 'blacklist', 'unblacklist', 'changename', 'broadcast']
     await client.send_message(message.channel, "**These commands are available:**\n{}".format(
         '\n'.join(
             [util.get_config(message.server.id, "command_prefix", "?") + c if ' ' not in c else c for c in com])))
@@ -172,7 +173,7 @@ async def stats(client: discord.Client, message: discord.Message):
         "Currently running on `{}` server(s). Processed `{}` messages since startup.\n"
         "Connected to `{}` voice channels.\n"
         "Using `{}MB` of memory."
-        .format(server_count, msgcount, voice_clients, used_memory))
+            .format(server_count, msgcount, voice_clients, used_memory))
 
 
 @cmds.command("searchyt")
