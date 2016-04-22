@@ -109,8 +109,9 @@ async def again(client: discord.Client, message: discord.Message):
     # Add it to the queue.
     try:
         queue = voice_params[message.server.id]["queue"]
+        title = voice_params[message.server.id]["title"]
         assert isinstance(queue, asyncio.Queue)
-        queue.put_nowait(i)
+        queue.put_nowait((i, title))
     except KeyError:
         await client.send_message(message.channel, content=":x: No queue to place item on.")
     except asyncio.QueueFull:
