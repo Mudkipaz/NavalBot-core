@@ -253,7 +253,10 @@ async def get_queued_vids(client: discord.Client, message: discord.Message):
 
     for item in range(0, len(queue) if len(queue) < 10 else 10):
         i = queue[item]
-        title = i[1].get('title')
+        if isinstance(i[1], str):
+            title = i[1]
+        else:
+            title = i[1].get("title")
         s += "\n{}. `{}`".format(item + 1, title)
 
     if len(queue) > 10:
