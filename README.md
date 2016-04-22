@@ -85,6 +85,8 @@ You need a Google Youtube API v3 key in order for commands like `searchyt` and `
 - ?invite
 - ?stats
 - ?lock
+- ?coin
+- ?remindme
 
 #### Music commands:
 - ?searchyt
@@ -95,6 +97,8 @@ You need a Google Youtube API v3 key in order for commands like `searchyt` and `
 - ?stop
 - ?skip
 - ?queue
+- ?shuffle
+- ?again
 
 #### Moderation commands
 - ?mute
@@ -102,14 +106,18 @@ You need a Google Youtube API v3 key in order for commands like `searchyt` and `
 - ?kick
 - ?ban
 - ?unban
+- ?banned
 - ?delete
 
 #### Admin commands:
 - ?setcfg
 - ?getcfg
-- ?sql
-- ?py
 - ?update
+- ?blacklist
+- ?unblacklist
+- ?changename
+- ?avatar
+- ?broadcast
 
 ## Contributing
 
