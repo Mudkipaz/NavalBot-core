@@ -21,14 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 =================================
 """
 import asyncio
-import copy
 import random
 
 import discord
 import functools
 import youtube_dl
 
-import cmds
 import util
 
 from cmds import command
@@ -61,6 +59,8 @@ async def _await_queue(server_id: str):
             items = await queue.get()
         except RuntimeError:
             return
+        # Place the current coroutine on the voice_params
+        voice_params[server_id]["curr_coro"] = items[0]
         # Await the playing coroutine.
         await items[0]
 
@@ -83,6 +83,40 @@ async def _fix_voice(client: discord.Client, vc: discord.VoiceClient, channel: d
         return new_vc
     else:
         return vc
+
+
+@command("again")
+async def again(client: discord.Client, message: discord.Message):
+    """
+    Adds this item to the queue again.
+    """
+
+    # Standard checks.
+    if not discord.opus.is_loaded():
+        await client.send_message(message.channel, content=":x: Cannot load voice module.")
+        return
+
+    if message.server.id not in voice_params:
+        await client.send_message(message.channel, content=":x: Not currently connected on this server.")
+        return
+
+    # Get the item from the queue.
+    i = voice_params[message.server.id].get("curr_coro")
+    if not i:
+        await client.send_message(message.channel, content=":x: Nothing to play again.")
+        return
+
+    # Add it to the queue.
+    try:
+        queue = voice_params[message.server.id]["queue"]
+        assert isinstance(queue, asyncio.Queue)
+        queue.put_nowait(i)
+    except KeyError:
+        await client.send_message(message.channel, content=":x: No queue to place item on.")
+    except asyncio.QueueFull:
+        await client.send_message(message.channel, content=":x: Queue is full.")
+    else:
+        await client.send_message(message.channel, content=":heavy_check_mark: Repeating track.")
 
 
 @command("shuffle")
@@ -432,7 +466,7 @@ async def play_youtube(client: discord.Client, message: discord.Message, args: l
             )
             return
 
-        await client.send_message(message.channel, ":heavy_check_mark: Added {} track(s) to queue.".format(num+1))
+        await client.send_message(message.channel, ":heavy_check_mark: Added {} track(s) to queue.".format(num + 1))
 
     # Create a new task, if applicable.
     if 'task' not in voice_params[message.server.id]:
