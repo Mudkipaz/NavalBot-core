@@ -55,6 +55,8 @@ async def _await_queue(server_id: str):
     # Awaits new songs on the queue.
     while True:
         queue = voice_params[server_id]["queue"]
+        if not queue:
+            return
         try:
             items = await queue.get()
         except RuntimeError:
@@ -246,7 +248,7 @@ async def get_queued_vids(client: discord.Client, message: discord.Message):
         queue = queue._queue
 
     s = "**Currently queued:**"
-    if len(queue) == 0:
+    if not queue or len(queue) == 0:
         s += "\n`Nothing is queued.`"
         await client.send_message(message.channel, s)
         return
@@ -265,6 +267,94 @@ async def get_queued_vids(client: discord.Client, message: discord.Message):
 
 
 @command("skip")
+@util.with_permission("Bot Commander", "Voice", "Admin")
+async def skip(client: discord.Client, message: discord.Message):
+    """
+    Skips ahead one or more tracks.
+    """
+    # Get the current player instance.
+    if not discord.opus.is_loaded():
+        await client.send_message(message.channel, content=":x: Cannot load voice module.")
+        return
+
+    if message.server.id not in voice_params:
+        await client.send_message(message.channel, content=":x: Not currently connected on this server.")
+        return
+
+    playing = voice_params[message.server.id].get("playing")
+    if not playing:
+        await client.send_message(message.channel, content=":x: No song is currently playing on this server.")
+        return
+
+    player = voice_params[message.server.id].get("player")
+    if not player:
+        # ???
+        await client.send_message(message.channel, content=":x: No song is currently playing on this server.")
+        return
+
+    try:
+        aaa = message.content.split(" ")
+        if aaa[1] == "all":
+            to_skip = 99
+        else:
+            to_skip = int(aaa[1])
+
+    except IndexError:
+        to_skip = 1
+    except ValueError:
+        to_skip = 1
+
+    # Re-arrange the queue.
+    queue = voice_params[message.server.id].get("queue")
+    if not queue:
+        # what
+        await client.send_message(message.channel, content=":x: This kills the bot")
+        return
+    assert isinstance(queue, asyncio.Queue)
+
+    if to_skip == 1:
+        # Just stop the player.
+        player.stop()
+        await client.send_message(message.channel, content=":heavy_check_mark: Skipped current song.")
+        return
+
+    # Remove 1 off of to_skip to represent the current song
+    to_skip -= 1
+
+    player.stop()
+
+    internal_queue = list(queue._queue)
+    if len(internal_queue) < to_skip:
+        # REMOVE KEBAB remove kebab
+        # you are worst turk. you are the turk idiot you are the turk smell. return to croatioa. to our croatia cousins
+        # you may come our contry. you may live in the zoo….ahahahaha ,bosnia we will never forgeve you. cetnik rascal
+        # FUck but fuck asshole turk stink bosnia sqhipere shqipare..turk genocide best day of my life. take a bath of
+        # dead turk..ahahahahahBOSNIA WE WILL GET YOU!! do not forget ww2 .albiania we kill the king , albania return
+        # to your precious mongolia….hahahahaha idiot turk and bosnian smell so bad..wow i can smell it. REMOVE KEBAB
+        # FROM THE PREMISES.
+        # you will get caught. russia+usa+croatia+slovak=kill bosnia…you will ww2/ tupac alive in serbia, tupac making
+        # album of serbia . fast rap tupac serbia. we are rich and have gold now hahahaha ha because of tupac… you are
+        # ppoor stink turk… you live in a hovel hahahaha, you live in a yurt
+        # tupac alive numbr one #1 in serbia ….fuck the croatia ,..FUCKk ashol turks no good i spit﻿ in the mouth eye of
+        # ur flag and contry. 2pac aliv and real strong wizard kill all the turk farm aminal with rap magic now we
+        # the serba rule .ape of the zoo presidant georg bush fukc the great satan and lay egg this egg hatch and bosnia
+        # wa;s born. stupid baby form the eggn give bak our clay we will crush u lik a skull of pig. serbia greattst
+        # countrey
+        del voice_params[message.server.id]["queue"]
+        player.stop()
+        await client.send_message(message.channel, ":x: Reached end of queue - stopped playing.")
+        return
+
+    # Put things from index: onto the queue.
+    new_queue = asyncio.Queue(maxsize=99)
+    for i in internal_queue[to_skip:]:
+        # No need for try/catch
+        new_queue.put_nowait(i)
+
+    voice_params[message.server.id]["queue"] = new_queue
+    await client.send_message(message.channel, ":heavy_check_mark: Skipped {} items.".format(to_skip + 1))
+
+
 @command("stop")
 @util.with_permission("Bot Commander", "Voice", "Admin")
 async def stop_vid(client: discord.Client, message: discord.Message):
