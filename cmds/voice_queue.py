@@ -21,18 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 =================================
 """
 
-import os
-import logging
 import asyncio
+import functools
+import logging
 
 import discord
-import functools
 import youtube_dl
 from discord.voice_client import StreamPlayer, VoiceClient
 
 import cmds
 import util
-
 from cmds import command
 
 voice_params = {"playing": False, "player": None, "file": "", "in_server": None}

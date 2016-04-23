@@ -176,18 +176,24 @@ def enforce_args(count: int, error_msg: str = None):
     def __decorator(func):
         async def __fake_enforcing_func(client: discord.Client, message: discord.Message):
             # Check the number of args.
-            split = shlex.split(message.content)
-            # Remove the `command` from the front.
-            split.pop(0)
-            if len(split) < count:
-                await client.send_message(
-                    message.channel,
-                    error_msg
-                )
-                return
-            else:
-                # Await the function.
-                await func(client, message, split)
+            try:
+                split = shlex.split(message.content)
+                # Remove the `command` from the front.
+                split.pop(0)
+                if len(split) < count:
+                    await client.send_message(
+                        message.channel,
+                        error_msg
+                    )
+                    return
+                else:
+                    # Await the function.
+                    await func(client, message, split)
+
+            except ValueError:
+                await client.send_message(message.channel,
+                                          ":no_entry: Something went horribly wrong. Could not get video "
+                                          "information.")
 
         __fake_enforcing_func.__doc__ = func.__doc__
 
@@ -243,4 +249,3 @@ def sanitize(param):
     param = param.replace('..', '.').replace('/', '')
     param = param.split('?')[0]
     return param
-
