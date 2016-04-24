@@ -76,7 +76,7 @@ if __name__ != "__zipdep":
 
 # =============== Version information
 
-VERSION = "2.7.2"
+VERSION = "2.7.3    "
 VERSIONT = tuple(int(i) for i in VERSION.split("."))
 
 
