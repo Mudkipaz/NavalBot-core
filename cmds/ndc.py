@@ -81,6 +81,25 @@ async def reload_all(client: discord.Client, message: discord.Message):
     await client.send_message(message.channel, ":heavy_check_mark: Reloaded all.")
 
 
+@cmds.command("reloadvoice")
+@util.owner
+async def reload_voice(client: discord.Client, message: discord.Message):
+    """
+    Reloads new voice.
+    """
+    if not client.user.bot:
+        return
+
+    for mod in sys.modules:
+        if mod.startswith("voice."):
+            # Reload it.
+            logger.info("Reloading module: {}".format(mod))
+            importlib.reload(sys.modules[mod])
+            logger.info("Reloaded module.")
+
+    await client.send_message(message.channel, ":heavy_check_mark: Reloaded voice.")
+
+
 @cmds.command("sql")
 @util.owner
 async def sql(client: discord.Client, message: discord.Message):
