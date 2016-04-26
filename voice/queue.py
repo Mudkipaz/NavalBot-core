@@ -21,14 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 """
 
 import asyncio
+import random
 
-from math import trunc
+from math import trunc, ceil
 
 import discord
 import util
 from cmds import command
 
 from voice.stores import voice_params
+from voice.voice_util import find_voice_channel
 
 
 @command("again")
@@ -255,6 +257,89 @@ async def skip(client: discord.Client, message: discord.Message):
 
     voice_params[message.server.id]["queue"] = new_queue
     await client.send_message(message.channel, ":heavy_check_mark: Skipped {} items.".format(to_skip + 1))
+
+
+@command("voteskip")
+async def voteskip(client: discord.Client, message: discord.Message):
+    """
+    Starts a vote to skip the currently playing track.
+    """
+    # Get the current player instance.
+    if not discord.opus.is_loaded():
+        await client.send_message(message.channel, content=":x: Cannot load voice module.")
+        return
+
+    if message.server.id not in voice_params:
+        await client.send_message(message.channel, content=":x: Not currently connected on this server.")
+        return
+
+    playing = voice_params[message.server.id].get("playing")
+    if not playing:
+        await client.send_message(message.channel, content=":x: No song is currently playing on this server.")
+        return
+
+    player = voice_params[message.server.id].get("player")
+    if not player:
+        # ???
+        await client.send_message(message.channel, content=":x: No song is currently playing on this server.")
+        return
+
+    # Get the client
+    voiceclient = client.voice[message.server.id]
+
+    # Calculate the required voteskips.
+    channel = voiceclient.channel
+    if not channel:
+        # ???
+        await client.send_message(message.channel, content=":x: ??? This kills the bot, somehow.")
+        return
+
+    # Count the members.
+    voice_members = channel.voice_members
+    vc_count = 0
+
+    if message.author.id not in [_.id for _ in voice_members]:
+        await client.send_message(message.channel, content=":x: You are not in the correct channel.")
+        return
+
+    for member in voice_members:
+        if member.deaf or member.self_deaf:
+            continue
+        elif member.id == client.user.id:
+            continue
+        else:
+            vc_count += 1
+
+    # Divide it by two.
+    required = int(ceil(vc_count / 2))
+
+    # Check the voice_params
+    if 'voteskips' not in voice_params[message.server.id]:
+        voice_params[message.server.id]['voteskips'] = []
+
+    voteskips = voice_params[message.server.id]['voteskips']
+
+    if message.author.id not in voteskips:
+        voteskips.append(message.author.id)
+        if len(voteskips) != required:
+            await client.send_message(message.channel, ":heavy_check_mark: Voteskip acknowledged. `{}` more "
+                                                       "votes required.".format(required - len(voteskips)))
+        # Update the list
+        voice_params[message.server.id]['voteskips'] = voteskips
+    elif len(voteskips) < required:
+        # They're in the list, and there's not enough votes. Ignore them.
+        await client.send_message(message.channel, content=":x: You have already voted.")
+        return
+
+    # Skip as appropriate.
+    # Also skip if there's only one person required.
+    if len(voteskips) >= required or required == 1:
+        player.stop()
+        await client.send_message(message.channel, content=":heavy_check_mark: Skipped current song.")
+        del voice_params[message.server.id]['voteskips']
+        return
+
+
 
 
 @command("move")
