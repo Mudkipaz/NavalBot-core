@@ -34,9 +34,9 @@ import time
 import traceback
 from ctypes.util import find_library
 
-import discord
 import requests
 
+import discord
 # =============== Commands
 import cmds
 import util
@@ -177,13 +177,13 @@ async def on_ready():
     if isinstance(client.voice, dict):
         if client.user.bot:
             logger.info("Using upstream voice module.")
-            from cmds import voice_bot as voice
+            from voice import voice_main as voice
         else:
             logger.error("Using modified discord.py without a bot account! Cannot continue.")
             sys.exit(3)
     else:
         logger.warning("Using queue-based voice module. This is not ideal.")
-        from cmds import voice_queue as voice
+        from cmds import voice_old as voice
     # print ready msg
     logger.info("Loaded NavalBot, logged in as `{}`.".format(client.user.name))
     # make file dir
