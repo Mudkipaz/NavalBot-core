@@ -20,19 +20,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 =================================
 """
 import asyncio
-
+import functools
 from math import trunc
 
-import functools
 import youtube_dl
 
 import discord
 import util
 from cmds import command
-
 from voice.stores import voice_params, voice_locks
 
 # Get loop
+from voice.voice_util import find_voice_channel
+
 loop = asyncio.get_event_loop()
 
 async def _await_queue(server_id: str):
@@ -68,20 +68,6 @@ async def _fix_voice(client: discord.Client, vc: discord.VoiceClient, channel: d
         return new_vc
     else:
         return vc
-
-async def find_voice_channel(server: discord.Server):
-    # Search for a voice channel called 'Music' or 'NavalBot'.
-    for channel in server.channels:
-        assert isinstance(channel, discord.Channel)
-        if not channel.type == discord.ChannelType.voice:
-            continue
-        # Check the name.
-        if channel.name.lower() in ['music', 'navalbot']:
-            chan = channel
-            break
-    else:
-        return None
-    return chan
 
 
 async def _oauth2_play_youtube(
