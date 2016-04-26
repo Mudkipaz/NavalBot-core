@@ -84,6 +84,63 @@ async def find_voice_channel(server: discord.Server):
     return chan
 
 
+async def _oauth2_play_youtube(
+        client: discord.Client,
+        message: discord.Message,
+        voice_client: discord.VoiceClient,
+        voice_channel: discord.Channel,
+        download_url: str,
+        info: dict
+):
+    """
+    Co-routine that is used for the message queue.
+
+    Parameters:
+        client:
+            The client instance.
+
+        message:
+            The message object used to queue, with ?play.
+
+        voice_client:
+            The voice client to use to play with.
+
+        voice_channel:
+            The channel to join.
+
+        info:
+            The youtube_dl information dict.
+    """
+    # Fix the voice client if we need to.
+    vc = await _fix_voice(client, voice_client, voice_channel)
+    player = vc.create_ffmpeg_player(download_url)
+    voice_params[message.server.id]["playing"] = True
+    voice_params[message.server.id]["title"] = info.get("title", "???")
+    voice_params[message.server.id]["player"] = player
+    voice_params[message.server.id]["progress"] = 0
+    voice_params[message.server.id]["duration"] = info.get("duration")
+    await client.send_message(message.channel, ":heavy_check_mark: Now playing: `{}`".format(info.get("title", "???")))
+    assert isinstance(player, discord.voice_client.ProcessPlayer)
+    # Start playing
+    player.start()
+    # Check ever 0.5 seconds if we're done or not.
+    # 0.5 is non-noticable delay, but doesn't kill the CPU.
+    while True:
+        if player.is_done():
+            break
+        else:
+            if player.is_playing():
+                # TODO: Use time.time instead
+                voice_params[message.server.id]["progress"] += 0.5
+            await asyncio.sleep(0.5)
+    # Reset everything after it's done.
+    voice_params[message.server.id]["playing"] = False
+    voice_params[message.server.id]["title"] = ""
+    voice_params[message.server.id]["player"] = None
+    voice_params[message.server.id]["progress"] = None
+    voice_params[message.server.id]["duration"] = None
+
+
 @command("np")
 @command("nowplaying")
 async def np(client: discord.Client, message: discord.Message):
@@ -332,36 +389,7 @@ async def play_youtube(client: discord.Client, message: discord.Message, args: l
                 client.voice[message.server.id] = voice_client
             except discord.ClientException:
                 await client.send_message(message.channel, ":x: Error happened on connecting to voice.")
-
-    async def _oauth2_play_youtube(d, t, du=None):
-        # Fix the voice client if we need to.
-        vc = await _fix_voice(client, voice_client, voice_channel)
-        player = vc.create_ffmpeg_player(d)
-        voice_params[message.server.id]["playing"] = True
-        voice_params[message.server.id]["title"] = t
-        voice_params[message.server.id]["player"] = player
-        voice_params[message.server.id]["progress"] = 0
-        voice_params[message.server.id]["duration"] = du
-        await client.send_message(message.channel, ":heavy_check_mark: Now playing: `{}`".format(t))
-        assert isinstance(player, discord.voice_client.ProcessPlayer)
-        # Start playing
-        player.start()
-        # Check ever 0.5 seconds if we're done or not.
-        # 0.5 is non-noticable delay, but doesn't kill the CPU.
-        while True:
-            if player.is_done():
-                break
-            else:
-                if player.is_playing():
-                    # TODO: Use time.time instead
-                    voice_params[message.server.id]["progress"] += 0.5
-                await asyncio.sleep(0.5)
-        # Reset everything after it's done.
-        voice_params[message.server.id]["playing"] = False
-        voice_params[message.server.id]["title"] = ""
-        voice_params[message.server.id]["player"] = None
-        voice_params[message.server.id]["progress"] = None
-        voice_params[message.server.id]["duration"] = None
+                return
 
     # Get the number of songs on the queue.
     items = queue.qsize()
@@ -376,7 +404,12 @@ async def play_youtube(client: discord.Client, message: discord.Message, args: l
             await client.send_message(message.channel, ":heavy_check_mark: You are next in the queue.")
 
         try:
-            queue.put_nowait((_oauth2_play_youtube(download_url, title, du=info.get("duration")), info))
+            queue.put_nowait((_oauth2_play_youtube(
+                client, message,
+                voice_client, voice_channel,
+                download_url, info
+
+            ), info))
         except asyncio.QueueFull:
             await client.send_message(message.channel,
                                       ":no_entry: There are too many songs on the queue. Cannot start "
@@ -400,7 +433,11 @@ async def play_youtube(client: discord.Client, message: discord.Message, args: l
                 break
             # Add it to the queue.
             try:
-                queue.put_nowait((_oauth2_play_youtube(item.get("url"), item.get("title", "???")), item))
+                queue.put_nowait((_oauth2_play_youtube(
+                    client, message,
+                    voice_client, voice_channel,
+                    download_url, info
+                ), item))
             except asyncio.QueueFull:
                 await client.send_message(
                     message.channel, ":no_entry: There are too many songs on the queue. "
